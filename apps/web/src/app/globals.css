@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #091322;
+  --panel: rgba(8, 20, 36, 0.76);
+  --panel-border: rgba(111, 189, 255, 0.22);
+  --text: #f4f8ff;
+  --muted: #9bb0cf;
+  --accent: #5fd1ff;
+  --accent-2: #19ffa8;
+  --danger: #ff768f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font-space-grotesk), sans-serif;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(24, 92, 255, 0.25), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(11, 201, 188, 0.2), transparent 40%),
+    linear-gradient(165deg, #050b16, #091322 50%, #08111d);
+}
+
+a {
+  color: inherit;
+}
+
+.dashboard-shell {
+  width: min(1160px, 100% - 2rem);
+  margin: 1.25rem auto 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-card,
+.panel {
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.hero-card {
+  padding: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0.55rem 0 0;
+  font-size: clamp(1.6rem, 3.4vw, 2.35rem);
+  line-height: 1.1;
+}
+
+.hero-copy {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  max-width: 44rem;
+}
+
+.status-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.pill {
+  border-radius: 999px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  padding: 0.3rem 0.6rem;
+}
+
+.pill-connected {
+  background: rgba(22, 217, 130, 0.18);
+  color: #84f7c4;
+}
+
+.pill-connecting {
+  background: rgba(95, 209, 255, 0.18);
+  color: #7fdefe;
+}
+
+.pill-disconnected,
+.pill-error {
+  background: rgba(255, 118, 143, 0.2);
+  color: #ff9cad;
+}
+
+.mono {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-family: var(--font-ibm-plex-mono), monospace;
+}
+
+.error-text {
+  margin: 0.8rem 0 0;
+  color: var(--danger);
+  font-size: 0.92rem;
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.8rem;
+}
+
+.market-panel {
+  padding: 1rem;
+}
+
+.panel {
+  padding: 1rem;
+}
+
+.panel-title {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
+.price {
+  margin: 0.4rem 0 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.form-stack {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid rgba(169, 193, 227, 0.28);
+  background: rgba(10, 20, 36, 0.75);
+  color: var(--text);
+  border-radius: 0.65rem;
+  padding: 0.56rem 0.65rem;
+  font: inherit;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: none;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  padding: 0.58rem 0.8rem;
+  font-weight: 600;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.primary-btn {
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  color: #051422;
+}
+
+.ghost-btn {
+  border: 1px solid rgba(170, 222, 255, 0.35);
+  background: rgba(23, 48, 79, 0.38);
+  color: #bce5ff;
+  font-size: 0.82rem;
+}
+
+.primary-btn:disabled,
+.ghost-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.primary-btn:not(:disabled):hover,
+.ghost-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.feedback {
+  margin: 0.75rem 0 0;
+  color: #a3f6cf;
+  font-size: 0.9rem;
+}
+
+.table-wrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 430px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.58rem 0.35rem;
+  border-bottom: 1px solid rgba(163, 193, 231, 0.16);
+  font-size: 0.86rem;
+}
+
+th {
+  color: #b9cbe6;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}

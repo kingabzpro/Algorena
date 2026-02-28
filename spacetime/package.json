@@ -1,0 +1,8 @@
+{
+  "name": "algorena-spacetime-module",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "spacetimedb": "^2.0.2"
+  }
+}
