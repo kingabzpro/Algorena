@@ -43,11 +43,21 @@ const leaderboard = table(
   }
 );
 
+const botProfile = table(
+  { public: true },
+  {
+    userAlias: t.string().primaryKey(),
+    displayName: t.string(),
+    strategy: t.string(),
+  }
+);
+
 const spacetime = schema(
   {
     marketState,
     prediction,
     leaderboard,
+    botProfile,
   },
   {
     CASE_CONVERSION_POLICY: CaseConversionPolicy.None,
@@ -56,13 +66,73 @@ const spacetime = schema(
 
 export default spacetime;
 
+type Direction = "up" | "down";
+
+type DemoBot = {
+  userAlias: string;
+  displayName: string;
+  strategy: string;
+  seedScore: number;
+  seedWins: number;
+  seedLosses: number;
+};
+
+type InsertPredictionResult = "ok" | "missing_market" | "duplicate";
+
 const STARTER_MARKETS: ReadonlyArray<{ symbol: string; priceUsd: number }> = [
   { symbol: "BTC-USD", priceUsd: 62000 },
   { symbol: "ETH-USD", priceUsd: 3200 },
 ];
 
+const DEMO_BOTS: ReadonlyArray<DemoBot> = [
+  {
+    userAlias: "quant_khan",
+    displayName: "Quant Khan",
+    strategy: "Momentum",
+    seedScore: 22,
+    seedWins: 8,
+    seedLosses: 6,
+  },
+  {
+    userAlias: "wave_rider",
+    displayName: "Wave Rider",
+    strategy: "Mean Reversion",
+    seedScore: 17,
+    seedWins: 7,
+    seedLosses: 6,
+  },
+  {
+    userAlias: "delta_hawk",
+    displayName: "Delta Hawk",
+    strategy: "Breakout",
+    seedScore: 11,
+    seedWins: 6,
+    seedLosses: 7,
+  },
+  {
+    userAlias: "macro_marauder",
+    displayName: "Macro Marauder",
+    strategy: "News Driven",
+    seedScore: 9,
+    seedWins: 5,
+    seedLosses: 6,
+  },
+  {
+    userAlias: "sigma_scout",
+    displayName: "Sigma Scout",
+    strategy: "Scalping",
+    seedScore: 5,
+    seedWins: 4,
+    seedLosses: 5,
+  },
+];
+
 function nowMs(ctx: ReducerCtx<typeof spacetime.schemaType>): number {
   return Number(ctx.timestamp.toMillis());
+}
+
+function aliasKey(userAlias: string): string {
+  return userAlias.trim().toLowerCase();
 }
 
 function findMarketRow(
@@ -71,6 +141,18 @@ function findMarketRow(
 ) {
   for (const row of ctx.db.marketState.iter()) {
     if (row.symbol === symbol) {
+      return row;
+    }
+  }
+  return null;
+}
+
+function findBotProfileRow(
+  ctx: ReducerCtx<typeof spacetime.schemaType>,
+  userAlias: string
+) {
+  for (const row of ctx.db.botProfile.iter()) {
+    if (row.userAlias === userAlias) {
       return row;
     }
   }
@@ -105,6 +187,30 @@ function findLeaderboardRow(
     }
   }
   return null;
+}
+
+function ensureDemoEntities(ctx: ReducerCtx<typeof spacetime.schemaType>) {
+  for (const bot of DEMO_BOTS) {
+    const existingBot = findBotProfileRow(ctx, bot.userAlias);
+    if (!existingBot) {
+      ctx.db.botProfile.insert({
+        userAlias: bot.userAlias,
+        displayName: bot.displayName,
+        strategy: bot.strategy,
+      });
+    }
+
+    const existingLeaderboard = findLeaderboardRow(ctx, bot.userAlias);
+    if (!existingLeaderboard) {
+      ctx.db.leaderboard.insert({
+        userAlias: bot.userAlias,
+        score: bot.seedScore,
+        wins: bot.seedWins,
+        losses: bot.seedLosses,
+        total: bot.seedWins + bot.seedLosses,
+      });
+    }
+  }
 }
 
 function updateLeaderboard(
@@ -167,11 +273,92 @@ function resolveDuePredictions(
   }
 }
 
+function openPredictionCountForUser(
+  ctx: ReducerCtx<typeof spacetime.schemaType>,
+  userAlias: string
+): number {
+  const targetAlias = aliasKey(userAlias);
+  let open = 0;
+  for (const row of ctx.db.prediction.iter()) {
+    if (aliasKey(row.userAlias) === targetAlias && !row.resolved) {
+      open += 1;
+    }
+  }
+  return open;
+}
+
+function hasDuplicateOpenPrediction(
+  ctx: ReducerCtx<typeof spacetime.schemaType>,
+  input: {
+    userAlias: string;
+    symbol: string;
+    direction: Direction;
+    horizonMinutes: number;
+  }
+): boolean {
+  const targetAlias = aliasKey(input.userAlias);
+  for (const row of ctx.db.prediction.iter()) {
+    if (
+      !row.resolved &&
+      aliasKey(row.userAlias) === targetAlias &&
+      row.symbol === input.symbol &&
+      row.direction === input.direction &&
+      Number(row.horizonMinutes) === input.horizonMinutes
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function insertPrediction(
+  ctx: ReducerCtx<typeof spacetime.schemaType>,
+  input: {
+    userAlias: string;
+    symbol: string;
+    direction: Direction;
+    horizonMinutes: number;
+  },
+  preventDuplicates = true
+): InsertPredictionResult {
+  if (preventDuplicates && hasDuplicateOpenPrediction(ctx, input)) {
+    return "duplicate";
+  }
+
+  const market = findMarketRow(ctx, input.symbol);
+  if (!market) {
+    return "missing_market";
+  }
+
+  const createdAtMs = nowMs(ctx);
+
+  ctx.db.prediction.insert({
+    id: 0,
+    userAlias: input.userAlias,
+    symbol: input.symbol,
+    direction: input.direction,
+    horizonMinutes: input.horizonMinutes,
+    entryPriceUsd: market.priceUsd,
+    createdAtMs,
+    resolveAtMs: createdAtMs + input.horizonMinutes * 60 * 1000,
+    resolved: false,
+    correct: false,
+  });
+
+  return "ok";
+}
+
+function chooseDemoDirection(atMs: number, idx: number): Direction {
+  return Math.floor(atMs / 60000 + idx) % 2 === 0 ? "up" : "down";
+}
+
 export const init = spacetime.init((ctx) => {
   const current = nowMs(ctx);
   for (const seed of STARTER_MARKETS) {
     putMarketState(ctx, seed.symbol, seed.priceUsd, current);
   }
+
+  ensureDemoEntities(ctx);
 });
 
 export const submitPrediction = spacetime.reducer(
@@ -198,25 +385,22 @@ export const submitPrediction = spacetime.reducer(
       throw new SenderError("horizonMinutes must be in [1, 240]");
     }
 
-    const market = findMarketRow(ctx, symbol);
-    if (!market) {
-      throw new SenderError(`Unsupported symbol: ${symbol}`);
-    }
-
-    const createdAtMs = nowMs(ctx);
-
-    ctx.db.prediction.insert({
-      id: 0,
+    const insertResult = insertPrediction(ctx, {
       userAlias: normalizedAlias,
       symbol,
       direction,
       horizonMinutes,
-      entryPriceUsd: market.priceUsd,
-      createdAtMs,
-      resolveAtMs: createdAtMs + horizonMinutes * 60 * 1000,
-      resolved: false,
-      correct: false,
     });
+
+    if (insertResult === "missing_market") {
+      throw new SenderError(`Unsupported symbol: ${symbol}`);
+    }
+
+    if (insertResult === "duplicate") {
+      throw new SenderError(
+        "Duplicate open prediction: you already have this exact call active."
+      );
+    }
   }
 );
 
@@ -232,5 +416,34 @@ export const upsertMarketTick = spacetime.reducer(
   (ctx, { symbol, priceUsd, atMs }) => {
     putMarketState(ctx, symbol, priceUsd, atMs);
     resolveDuePredictions(ctx, symbol, priceUsd, atMs);
+  }
+);
+
+export const generateDemoActivity = spacetime.reducer(
+  {
+    name: "generateDemoActivity",
+  },
+  (ctx) => {
+    ensureDemoEntities(ctx);
+
+    const current = nowMs(ctx);
+    const symbols = ["BTC-USD", "ETH-USD"];
+
+    for (const [index, bot] of DEMO_BOTS.entries()) {
+      if (openPredictionCountForUser(ctx, bot.userAlias) >= 2) {
+        continue;
+      }
+
+      const symbol = symbols[(Math.floor(current / 30000) + index) % symbols.length];
+      const direction = chooseDemoDirection(current, index);
+      const horizonMinutes = ((Math.floor(current / 60000) + index) % 3) + 1;
+
+      insertPrediction(ctx, {
+        userAlias: bot.userAlias,
+        symbol,
+        direction,
+        horizonMinutes,
+      });
+    }
   }
 );

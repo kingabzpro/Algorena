@@ -1,35 +1,28 @@
 # Algorena MVP
 
-Algorena is a full-stack trading prediction MVP built with:
+Algorena is a realtime trading prediction app built with Next.js + SpacetimeDB.
 
-- Next.js (`apps/web`) for the frontend and API routes
-- SpacetimeDB (`spacetime`) for realtime state + reducers
-- Vercel for frontend hosting and preview deployments
+## How It Works
 
-## What This MVP Does
+1. The frontend (`apps/web`) subscribes to SpacetimeDB tables in realtime:
+   - `marketState` (live BTC/ETH prices)
+   - `prediction` (open + resolved calls)
+   - `leaderboard` (scores)
+2. A user submits an `up/down` prediction with a time horizon.
+3. The backend (`spacetime`) validates and stores the call, blocks duplicate open calls from the same user (same symbol/direction/horizon), and resolves calls when fresh ticks arrive.
+4. `/api/ingest` fetches BTC/ETH prices from CoinGecko, writes ticks to SpacetimeDB, and generates demo bot activity so the MVP stays active.
+5. UI shows top 5 predictions by default, with `Explore all` for the full feed.
 
-- Streams live market state (BTC-USD, ETH-USD) from SpacetimeDB
-- Lets users submit `up/down` predictions with a time horizon
-- Resolves predictions when new ticks arrive
-- Maintains a realtime leaderboard with scoring
-- Includes `/api/ingest` route to pull prices from CoinGecko and push ticks to SpacetimeDB
-- Includes `vercel.json` cron config to call `/api/ingest` every 2 minutes
-
-## Repository Layout
+## Project Structure
 
 ```text
-apps/web          Next.js app (UI + ingest API route)
-spacetime         SpacetimeDB TypeScript module (tables + reducers)
+apps/web   Next.js UI + /api/ingest
+spacetime  SpacetimeDB schema + reducers
 ```
 
-## 1) Publish SpacetimeDB Module (Maincloud)
+## Run Locally
 
-Prerequisites:
-
-- Spacetime CLI installed and authenticated
-- Node.js 22+ recommended
-
-Commands:
+### 1) Publish the Spacetime module (Maincloud)
 
 ```bash
 cd spacetime
@@ -38,50 +31,26 @@ spacetime login
 spacetime publish algorena-mvp
 ```
 
-If your CLI requires explicit target server, use the Maincloud flag/options supported by your installed CLI version.
-
-## 2) Run Frontend Locally
+### 2) Start the frontend
 
 ```bash
 cd apps/web
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
-Set these in `.env.local`:
+Set `apps/web/.env.local`:
 
 - `NEXT_PUBLIC_SPACETIMEDB_URL` (default: `wss://maincloud.spacetimedb.com`)
 - `NEXT_PUBLIC_SPACETIMEDB_NAME` (default: `algorena-mvp`)
-- `SPACETIMEDB_SERVICE_TOKEN` (optional, recommended for `/api/ingest`)
-- `CRON_SECRET` (optional, recommended for scheduled ingestion auth)
+- `SPACETIMEDB_SERVICE_TOKEN` (recommended for `/api/ingest`)
+- `CRON_SECRET` (optional, secures scheduled `/api/ingest`)
 
-## 3) Deploy Frontend to Vercel
-
-From `apps/web`:
-
-```bash
-vercel deploy -y
-```
-
-In Vercel project settings, set the same env vars as above.
-
-## API Route
-
-- `GET /api/ingest`
-  - Fetches BTC/ETH USD prices from CoinGecko
-  - Calls Spacetime reducer `upsertMarketTick`
-  - Returns JSON status
-
-If `CRON_SECRET` is set, include `Authorization: Bearer <CRON_SECRET>`.
-
-## Notes
-
-- Spacetime client bindings are implemented manually in `apps/web/src/lib/spacetime/module_bindings.ts` to match this module schema.
-- Run checks:
+## Deploy (Vercel)
 
 ```bash
 cd apps/web
-npm run lint
-npm run build
+vercel deploy -y
 ```
+
+`apps/web/vercel.json` schedules `/api/ingest` every 2 minutes.

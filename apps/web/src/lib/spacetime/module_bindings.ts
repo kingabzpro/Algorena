@@ -60,6 +60,16 @@ const tablesSchema = schema({
       total: t.u32(),
     }
   ),
+  botProfile: table(
+    {
+      name: "botProfile",
+    },
+    {
+      userAlias: t.string().primaryKey(),
+      displayName: t.string(),
+      strategy: t.string(),
+    }
+  ),
 });
 
 const reducersSchema = reducers(
@@ -73,7 +83,8 @@ const reducersSchema = reducers(
     symbol: t.string(),
     priceUsd: t.f64(),
     atMs: t.f64(),
-  })
+  }),
+  reducerSchema("generateDemoActivity", {})
 );
 
 const proceduresSchema = procedures();

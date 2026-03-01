@@ -103,6 +103,9 @@ export async function GET(request: NextRequest) {
         priceUsd: eth,
         atMs: now,
       });
+
+      // Keep the MVP lively by continuously generating demo bot predictions.
+      await conn.reducers.generateDemoActivity({});
     } finally {
       conn.disconnect();
     }

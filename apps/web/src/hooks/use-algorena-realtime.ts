@@ -224,22 +224,6 @@ export function useAlgorenaRealtime() {
     [status]
   );
 
-  const pushManualTick = useCallback(
-    async (symbol: string, priceUsd: number) => {
-      const conn = connectionRef.current;
-      if (!conn || status !== "connected") {
-        throw new Error("Not connected to SpacetimeDB");
-      }
-
-      await conn.reducers.upsertMarketTick({
-        symbol,
-        priceUsd,
-        atMs: Date.now(),
-      });
-    },
-    [status]
-  );
-
   const connectionInfo = useMemo(
     () => ({
       url: clientSpacetimeConfig.url,
@@ -256,6 +240,5 @@ export function useAlgorenaRealtime() {
     predictions,
     leaderboard,
     submitPrediction,
-    pushManualTick,
   };
 }
