@@ -9,11 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "16.2.12",
+    "next": "^16.3.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "spacetimedb": "^2.0.2",
-    "undici": "^6.28.0"
+    "undici": "^6.28.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -27,15 +27,15 @@
     "typescript": "^5"
   },
   "overrides": {
-    "sharp": "^0.35.0",
+    "sharp": "^0.35.4",
     "postcss": "^8.5.23",
     "nanoid": "^3.3.18",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "flatted": "^3.4.2",
     "@babel/core": "^7.29.6",
     "picomatch@<3": "^2.3.2",
     "picomatch@>=4": "^4.0.4",
-    "brace-expansion@<2": "^1.1.18",
+    "brace-expansion@<2": "^1.1.21",
     "brace-expansion@>=4": "^5.0.9"
   }
 }
